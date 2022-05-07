@@ -5,6 +5,7 @@ from flash import RunningStage
 from flash.core.data.data_module import DataModule
 from flash.core.data.io.input import DataKeys, Input
 from PIL import Image
+from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from efficient_face.transform import FaceRecognitionInputTransform
 
@@ -19,6 +20,7 @@ class EfficientFaceImageInput(Input):
             }
             for folder_name in data_folder_path.iterdir()
             for image_file_name in folder_name.iterdir()
+            if str(image_file_name).lower().endswith(IMG_EXTENSIONS)
         ]
 
     def load_sample(self, sample: Dict[DataKeys, Any]) -> Dict[DataKeys, Any]:
