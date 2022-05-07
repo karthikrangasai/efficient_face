@@ -5,6 +5,14 @@ from setuptools import find_packages, setup
 with open("README.md", encoding="utf-8") as fh:
     long_description = fh.read()
 
+extras = {
+    "dev": [
+        "coverage",
+        "codecov>=2.1",
+        "pytest>=5.0,<7.0",
+    ],
+}
+
 setup(
     name="efficient_face",
     version="0.1.0",
@@ -18,8 +26,8 @@ setup(
     packages=find_packages(where="src"),
     python_requires=">=3.7",
     install_requires=[
-        # "torch==1.11.0",
-        # "torchvision==0.12.0",
+        "torch==1.11.0",
+        "torchvision==0.12.0",
         "pytorch-lightning==1.6.2",
         "torchmetrics==0.8.1",
         "lightning-flash==0.7.4",
@@ -28,6 +36,7 @@ setup(
         "torch_optimizer==0.3.0",
         "pytorch-metric-learning==1.3.0",
     ],
+    extras_require=extras,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
