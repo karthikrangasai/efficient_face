@@ -13,15 +13,15 @@ from efficient_face.transform import FaceRecognitionInputTransform
 class EfficientFaceImageInput(Input):
     def load_data(self, data_folder_path: Path) -> List[Dict[DataKeys, Any]]:
         class_mapping = {folder_name.name: index for index, folder_name in enumerate(data_folder_path.iterdir())}
-        return [
-            {
-                DataKeys.INPUT: image_file_name,
-                DataKeys.TARGET: class_mapping[folder_name.name],
-            }
-            for folder_name in data_folder_path.iterdir()
-            for image_file_name in folder_name.iterdir()
-            if str(image_file_name).lower().endswith(IMG_EXTENSIONS)
-        ]
+
+        data = []
+        for folder_name in data_folder_path.iterdir():
+            if folder_name.is_dir():
+                for image_file_name in folder_name.iterdir():
+                    if image_file_name.is_file() and str(image_file_name).lower().endswith(IMG_EXTENSIONS):
+                        data.append({DataKeys.INPUT: image_file_name, DataKeys.TARGET: class_mapping[folder_name.name]})
+
+        return data
 
     def load_sample(self, sample: Dict[DataKeys, Any]) -> Dict[DataKeys, Any]:
         sample[DataKeys.INPUT] = image = Image.open(sample[DataKeys.INPUT]).convert("RGB")

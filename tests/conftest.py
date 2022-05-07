@@ -34,11 +34,15 @@ def _rand_image():
 @pytest.fixture(scope="session")
 def random_dataset_path(tmp_path_factory: Path):
     temp_path: Path = tmp_path_factory.mktemp("data")
-    for i in range(5):
-        d = temp_path / f"class{i}"
-        d.mkdir()
-        for j in range(20):
-            _rand_image().save(d / "image_{j}.jpg")
+    for i in range(10):
+        if (i % 2) == 0:
+            d = temp_path / f"class{i/2}"
+            d.mkdir()
+            for j in range(20):
+                _rand_image().save(d / "image_{j}.jpg")
+        else:
+            d = temp_path / f"text_file_{i//2}.txt"
+            d.write_text("Hello, World.")
     return temp_path
 
 
