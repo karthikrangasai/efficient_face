@@ -1,0 +1,6 @@
+from pytorch_metric_learning.losses import MultiSimilarityLoss, TripletMarginLoss
+
+from efficient_face.losses.hap2s_e__loss import HAP2S_E_Loss
+from efficient_face.losses.hap2s_p__loss import HAP2S_P_Loss
+from efficient_face.losses.triplet_batch_hard_v2_loss import ImprovedTripletMarginLoss
+from efficient_face.losses.triplet_focal_loss import TripletFocalMarginLoss
