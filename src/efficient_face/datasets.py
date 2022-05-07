@@ -9,11 +9,14 @@ from PIL import Image
 from efficient_face.transform import FaceRecognitionInputTransform
 
 
-class FaceRecognitionImageInput(Input):
+class EfficientFaceImageInput(Input):
     def load_data(self, data_folder_path: Path) -> List[Dict[DataKeys, Any]]:
         class_mapping = {folder_name.name: index for index, folder_name in enumerate(data_folder_path.iterdir())}
         return [
-            {DataKeys.INPUT: image_file_name, DataKeys.TARGET: class_mapping[folder_name.name]}
+            {
+                DataKeys.INPUT: image_file_name,
+                DataKeys.TARGET: class_mapping[folder_name.name],
+            }
             for folder_name in data_folder_path.iterdir()
             for image_file_name in folder_name.iterdir()
         ]
@@ -24,7 +27,7 @@ class FaceRecognitionImageInput(Input):
         return sample
 
 
-class FaceRecognitionDataModule(DataModule):
+class EfficientFaceDataModule(DataModule):
     @classmethod
     def from_label_class_subfolders(
         cls,
@@ -33,14 +36,14 @@ class FaceRecognitionDataModule(DataModule):
         train_transform_kwargs: Optional[Dict] = None,
         val_transform_kwargs: Optional[Dict] = None,
         **data_module_kwargs: Any,
-    ) -> "FaceRecognitionDataModule":
+    ) -> "EfficientFaceDataModule":
 
         train_input = None
         if train_folder is not None:
             if train_transform_kwargs is None:
                 train_transform_kwargs = {}
 
-            train_input = FaceRecognitionImageInput(
+            train_input = EfficientFaceImageInput(
                 RunningStage.TRAINING,
                 Path(train_folder),
                 transform=FaceRecognitionInputTransform(running_stage=RunningStage.TRAINING, **train_transform_kwargs),
@@ -51,7 +54,7 @@ class FaceRecognitionDataModule(DataModule):
             if val_transform_kwargs is None:
                 val_transform_kwargs = {}
 
-            val_input = FaceRecognitionImageInput(
+            val_input = EfficientFaceImageInput(
                 RunningStage.VALIDATING,
                 Path(val_folder),
                 transform=FaceRecognitionInputTransform(running_stage=RunningStage.VALIDATING, **val_transform_kwargs),

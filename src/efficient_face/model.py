@@ -56,7 +56,7 @@ class BackboneModel(torch.nn.Module):
         return x
 
 
-class FaceRecognitionModel(Task):
+class EfficientFaceModel(Task):
     def __init__(
         self,
         model_name: Union[str, torch.nn.Module] = "efficientnet_b0",
@@ -121,7 +121,7 @@ class FaceRecognitionModel(Task):
         return logs
 
 
-class SAMFaceRecognitionModel(Task):
+class SAMEfficientFaceModel(Task):
     def __init__(
         self,
         model_name: Union[str, torch.nn.Module] = "efficientnet_b0",
@@ -175,7 +175,11 @@ class SAMFaceRecognitionModel(Task):
         return output
 
     def metrics_setp(
-        self, batch: Dict[DataKeys, Any], batch_idx: int, output: Dict[OutputKeys, Any], metrics: ModuleDict
+        self,
+        batch: Dict[DataKeys, Any],
+        batch_idx: int,
+        output: Dict[OutputKeys, Any],
+        metrics: ModuleDict,
     ) -> Dict[OutputKeys, Any]:
         labels = batch[DataKeys.TARGET]
         metric_embeddings = self.to_metrics_format(output[OutputKeys.OUTPUT])
@@ -226,6 +230,8 @@ class SAMFaceRecognitionModel(Task):
             **log_kwargs,
         )
 
+    # Taken from https://github.com/PyTorchLightning/pytorch-lightning/blob/master/pytorch_lightning/core/lightning.py
+    # Because in Flash `self.optimizers` points to Optimizers Registry and not the PL LightningModule method.
     def get_optimizers(
         self, use_pl_optimizer: bool = True
     ) -> Union[Optimizer, LightningOptimizer, List[Optimizer], List[LightningOptimizer]]:
@@ -240,7 +246,9 @@ class SAMFaceRecognitionModel(Task):
         # multiple opts
         return opts
 
-    def configure_optimizers(self) -> Union[Optimizer, Tuple[List[Optimizer], List[_LRScheduler]]]:
+    def configure_optimizers(
+        self,
+    ) -> Union[Optimizer, Tuple[List[Optimizer], List[_LRScheduler]]]:
         optimizer = super().configure_optimizers()
 
         if isinstance(optimizer, Tuple):
