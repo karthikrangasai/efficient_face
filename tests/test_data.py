@@ -10,14 +10,9 @@ from efficient_face.datasets import EfficientFaceDataModule
 def assert_batch_values(batch: Dict):
     assert DataKeys.INPUT in batch.keys()
     assert DataKeys.TARGET in batch.keys()
-    assert DataKeys.METADATA in batch.keys()
 
     assert isinstance(batch[DataKeys.INPUT], Tensor)
     assert isinstance(batch[DataKeys.TARGET], Tensor)
-
-    assert isinstance(batch[DataKeys.METADATA], List)
-    assert isinstance(batch[DataKeys.METADATA][0], Tuple)
-    assert isinstance(batch[DataKeys.METADATA][0][0], int)
 
 
 def test_train_data_loading(train_folder):

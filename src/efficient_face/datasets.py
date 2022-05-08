@@ -24,8 +24,7 @@ class EfficientFaceImageInput(Input):
         return data
 
     def load_sample(self, sample: Dict[DataKeys, Any]) -> Dict[DataKeys, Any]:
-        sample[DataKeys.INPUT] = image = Image.open(sample[DataKeys.INPUT]).convert("RGB")
-        sample[DataKeys.METADATA] = image.size
+        sample[DataKeys.INPUT] = Image.open(sample[DataKeys.INPUT]).convert("RGB")
         return sample
 
 
