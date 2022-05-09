@@ -3,6 +3,7 @@ from typing import Dict
 
 import yaml
 from flash import Trainer
+from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, RichModelSummary, RichProgressBar
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins.environments.slurm_environment import SLURMEnvironment
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     with open(args["train_args_file"]) as f:
         train_args = yaml.safe_load(f)
 
+    seed_everything(train_args["random_seed"])
     triplet_strategy = train_args["model"]["triplet_strategy"]
     message = f"Loss configuration for {triplet_strategy} is not defined."
     assert triplet_strategy not in ["ADAPTIVE", "ASSORTED", "CONSTELLATION"], message
