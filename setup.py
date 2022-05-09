@@ -35,6 +35,7 @@ setup(
         "wandb==0.12.0",
         "torch_optimizer==0.3.0",
         "pytorch-metric-learning==1.3.0",
+        "rich",
     ],
     extras_require=extras,
     classifiers=[

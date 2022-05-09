@@ -9,6 +9,7 @@ from torchvision import transforms as T
 @dataclass
 class FaceRecognitionInputTransform(InputTransform):
 
+    image_size: Union[int, Tuple[int, int]] = 226
     crop_size: Union[int, Tuple[int, int]] = 224
     model_name: str = "efficientnet_b0"
 
@@ -16,15 +17,13 @@ class FaceRecognitionInputTransform(InputTransform):
         return super().__post_init__()
 
     def get_model_preprocessor(self, model_name: str) -> Callable:
-        if model_name == "efficientnet_b0":
-            return T.Resize(size=[224, 224])
-
-        return T.Normalize((0.0, 0.0, 0.0), (0.225, 0.225, 0.225))
+        return T.Lambda(lambda x: x)
 
     def input_per_sample_transform(self) -> Callable:
         return T.Compose(
             [
                 T.ToTensor(),
+                T.Resize(size=self.image_size),
                 self.get_model_preprocessor(self.model_name),
                 T.RandomCrop(size=self.crop_size),
                 T.RandomHorizontalFlip(p=0.5),

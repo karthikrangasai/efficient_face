@@ -11,7 +11,7 @@ class SAM(Optimizer):
         self.rho = rho
         self.p = p
         self.q = p / (p - 1)
-        super().__init__(self.base_optimizer.param_groups, {})
+        super().__init__(self.base_optimizer.param_groups, self.base_optimizer.defaults)
 
     def _grad_norm(self) -> torch.Tensor:
         return torch.linalg.norm(

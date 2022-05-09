@@ -62,7 +62,7 @@ class EfficientFaceModel(Task):
         model_name: Union[str, torch.nn.Module] = "efficientnet_b0",
         embedding_size: int = 128,
         distance_metric: str = "L2",
-        loss_conf: str = "VANILLA",
+        triplet_strategy: str = "VANILLA",
         learning_rate: Optional[float] = 1e-3,
         miner_kwargs: Optional[Dict[str, Any]] = None,
         loss_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -77,19 +77,31 @@ class EfficientFaceModel(Task):
 
         super().__init__(
             model=BackboneModel(model_name=model_name, embedding_size=embedding_size),
-            loss_fn=LOSS_CONFIGURATION[loss_conf]["loss_func"](distance=DISTANCES[distance_metric], **loss_func_kwargs),
+            loss_fn=LOSS_CONFIGURATION[triplet_strategy]["loss_func"](
+                distance=DISTANCES[distance_metric], **loss_func_kwargs
+            ),
             learning_rate=learning_rate,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
             **kwargs,
         )
 
-        self.miner = LOSS_CONFIGURATION[loss_conf]["miner"](**miner_kwargs)
-        self.loss_fn = LOSS_CONFIGURATION[loss_conf]["loss_func"](
+        self.miner = LOSS_CONFIGURATION[triplet_strategy]["miner"](**miner_kwargs)
+        self.loss_fn = LOSS_CONFIGURATION[triplet_strategy]["loss_func"](
             distance=DISTANCES[distance_metric], **loss_func_kwargs
         )
         self.train_metrics = ModuleDict({})
         self.test_metrics = ModuleDict({})
+        self.save_hyperparameters(
+            "learning_rate",
+            "optimizer",
+            "model_name",
+            "embedding_size",
+            "distance_metric",
+            "triplet_strategy",
+            "loss_func_kwargs",
+            ignore=["model", "backbone", "head", "adapter"],
+        )
 
     def step(self, batch: Dict[DataKeys, Any], batch_idx: int, metrics: ModuleDict) -> Dict[OutputKeys, Any]:
         inputs = batch[DataKeys.INPUT]
@@ -127,7 +139,7 @@ class SAMEfficientFaceModel(Task):
         model_name: Union[str, torch.nn.Module] = "efficientnet_b0",
         embedding_size: int = 128,
         distance_metric: str = "L2",
-        loss_conf: str = "VANILLA",
+        triplet_strategy: str = "VANILLA",
         learning_rate: Optional[float] = 1e-3,
         miner_kwargs: Optional[Dict[str, Any]] = None,
         loss_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -142,20 +154,31 @@ class SAMEfficientFaceModel(Task):
 
         super().__init__(
             model=BackboneModel(model_name=model_name, embedding_size=embedding_size),
-            loss_fn=LOSS_CONFIGURATION[loss_conf]["loss_func"](distance=DISTANCES[distance_metric], **loss_func_kwargs),
+            loss_fn=LOSS_CONFIGURATION[triplet_strategy]["loss_func"](
+                distance=DISTANCES[distance_metric], **loss_func_kwargs
+            ),
             learning_rate=learning_rate,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
             **kwargs,
         )
 
-        self.miner = LOSS_CONFIGURATION[loss_conf]["miner"](**miner_kwargs)
-        self.loss_fn = LOSS_CONFIGURATION[loss_conf]["loss_func"](
+        self.miner = LOSS_CONFIGURATION[triplet_strategy]["miner"](**miner_kwargs)
+        self.loss_fn = LOSS_CONFIGURATION[triplet_strategy]["loss_func"](
             distance=DISTANCES[distance_metric], **loss_func_kwargs
         )
         self.train_metrics = ModuleDict({})
         self.test_metrics = ModuleDict({})
-
+        self.save_hyperparameters(
+            "learning_rate",
+            "optimizer",
+            "model_name",
+            "embedding_size",
+            "distance_metric",
+            "triplet_strategy",
+            "loss_func_kwargs",
+            ignore=["model", "backbone", "head", "adapter"],
+        )
         # Manual Optimization
         self.automatic_optimization = False
 
@@ -214,6 +237,7 @@ class SAMEfficientFaceModel(Task):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
+            sync_dist=True,
             **log_kwargs,
         )
         return output1[OutputKeys.LOSS]
@@ -227,6 +251,7 @@ class SAMEfficientFaceModel(Task):
             on_step=False,
             on_epoch=True,
             prog_bar=True,
+            sync_dist=True,
             **log_kwargs,
         )
 
@@ -249,9 +274,13 @@ class SAMEfficientFaceModel(Task):
     def configure_optimizers(
         self,
     ) -> Union[Optimizer, Tuple[List[Optimizer], List[_LRScheduler]]]:
-        optimizer = super().configure_optimizers()
+        base_optimizer = super().configure_optimizers()
 
-        if isinstance(optimizer, Tuple):
-            return SAM(optimizer=optimizer[0]), optimizer[1]
+        if isinstance(base_optimizer, Tuple):
+            optimizers, _lr_schedulers = base_optimizer
+            sam_optimizers = [SAM(optimizer=_optimizer) for _optimizer in optimizers]
+            lr_schedulers = [self._instantiate_lr_scheduler(optimizer) for optimizer in sam_optimizers]
+            del _lr_schedulers
+            return sam_optimizers, lr_schedulers
 
-        return SAM(optimizer=optimizer)
+        return SAM(optimizer=base_optimizer)
