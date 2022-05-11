@@ -232,7 +232,8 @@ class SAMEfficientFaceModel(Task):
         sam_optimizer.step(closure=closure)
 
         scheduler = self.get_lr_schedulers()
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
 
         # Log the loss
         log_kwargs = {"batch_size": output.get(OutputKeys.BATCH_SIZE, None)}

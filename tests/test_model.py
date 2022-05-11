@@ -1,3 +1,4 @@
+import pytest
 import torch
 from flash import Trainer
 from pytorch_lightning import seed_everything
@@ -12,13 +13,15 @@ def num_gpus():
     return 0
 
 
-def model_pipeline(_train_folder, _val_folder, temp_dir, model):
+@pytest.mark.parametrize("model_type", [EfficientFaceModel, SAMEfficientFaceModel])
+def test_model(train_folder, val_folder, tmpdir, model_type):
     seed_everything(1234)
     datamodule = EfficientFaceDataModule.from_label_class_subfolders(
-        train_folder=_train_folder, val_folder=_val_folder, batch_size=4
+        train_folder=train_folder, val_folder=val_folder, batch_size=4
     )
+    model = model_type()
     trainer = Trainer(
-        default_root_dir=temp_dir,
+        default_root_dir=tmpdir,
         fast_dev_run=True,
         max_epochs=3,
         limit_train_batches=10,
@@ -27,11 +30,3 @@ def model_pipeline(_train_folder, _val_folder, temp_dir, model):
     )
     trainer.fit(model, datamodule=datamodule)
     trainer.validate(model, datamodule=datamodule)
-
-
-def test_model(train_folder, val_folder, tmpdir):
-    model_pipeline(train_folder, val_folder, tmpdir, EfficientFaceModel())
-
-
-def test_sam_model(train_folder, val_folder, tmpdir):
-    model_pipeline(train_folder, val_folder, tmpdir, SAMEfficientFaceModel())
