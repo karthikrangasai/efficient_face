@@ -7,6 +7,7 @@ from flash.core.model import OutputKeys, Task
 from flash.core.registry import FlashRegistry
 from flash.core.utilities.types import LR_SCHEDULER_TYPE, OPTIMIZER_TYPE
 from pytorch_lightning.core.optimizer import LightningOptimizer
+from pytorch_lightning.utilities.types import LRSchedulerTypeUnion
 from torch.nn import Dropout, Linear, Module, ModuleDict, Sequential
 from torch.nn.functional import normalize
 from torch.optim import Optimizer
@@ -216,31 +217,34 @@ class SAMEfficientFaceModel(Task):
 
     def training_step(self, batch: Any, batch_idx: int) -> Any:
         sam_optimizer = self.get_optimizers()
-        sam_optimizer.zero_grad()
 
-        # Compute and add e_w
-        output1 = self.forward_step(batch, batch_idx)
-        self.manual_backward(output1[OutputKeys.LOSS])
-        sam_optimizer.compute_and_add_e_w()
-        sam_optimizer.zero_grad()
+        def closure():
+            sam_optimizer.zero_grad()
+            closure_output = self.forward_step(batch, batch_idx)
+            self.manual_backward(closure_output[OutputKeys.LOSS])
+            return closure_output
 
-        # Subtract e_w and step actual optimizer
-        output2 = self.forward_step(batch, batch_idx)
-        self.manual_backward(output2[OutputKeys.LOSS])
-        sam_optimizer.subtract_e_w_and_step_optimizer()
+        # Fist forward pass
         sam_optimizer.zero_grad()
+        output = self.forward_step(batch, batch_idx)
+        self.manual_backward(output[OutputKeys.LOSS])
+
+        sam_optimizer.step(closure=closure)
+
+        scheduler = self.get_lr_schedulers()
+        scheduler.step()
 
         # Log the loss
-        log_kwargs = {"batch_size": output1.get(OutputKeys.BATCH_SIZE, None)}
+        log_kwargs = {"batch_size": output.get(OutputKeys.BATCH_SIZE, None)}
         self.log_dict(
-            {f"train_{k}": v for k, v in output1[OutputKeys.LOGS].items()},
+            {f"train_{k}": v for k, v in output[OutputKeys.LOGS].items()},
             on_step=True,
             on_epoch=True,
             prog_bar=True,
             sync_dist=True,
             **log_kwargs,
         )
-        return output1[OutputKeys.LOSS]
+        return output[OutputKeys.LOSS]
 
     def validation_step(self, batch: Any, batch_idx: int) -> None:
         output = self.forward_step(batch, batch_idx)
@@ -270,6 +274,22 @@ class SAMEfficientFaceModel(Task):
             return opts[0]
         # multiple opts
         return opts
+
+    # Taken from https://github.com/PyTorchLightning/pytorch-lightning/blob/master/pytorch_lightning/core/lightning.py
+    # Because in Flash `self.lr_schedulers` points to LR_Schedulers Registry and not the PL LightningModule method.
+    def get_lr_schedulers(self) -> Optional[Union[LRSchedulerTypeUnion, List[LRSchedulerTypeUnion]]]:
+        if not self.trainer.lr_scheduler_configs:
+            return None
+
+        # ignore other keys "interval", "frequency", etc.
+        lr_schedulers = [config.scheduler for config in self.trainer.lr_scheduler_configs]
+
+        # single scheduler
+        if len(lr_schedulers) == 1:
+            return lr_schedulers[0]
+
+        # multiple schedulers
+        return lr_schedulers
 
     def configure_optimizers(
         self,
