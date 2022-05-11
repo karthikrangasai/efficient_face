@@ -36,6 +36,7 @@ setup(
         "torch_optimizer==0.3.0",
         "pytorch-metric-learning==1.3.0",
         "rich",
+        "datasets[vision]==2.2.1",
     ],
     extras_require=extras,
     classifiers=[
