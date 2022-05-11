@@ -2,6 +2,8 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from datasets import load_dataset
+from flash import DataKeys
 from PIL import Image
 
 
@@ -47,16 +49,20 @@ def random_dataset_path(tmp_path_factory: Path):
 
 
 @pytest.fixture(scope="session")
-def train_folder(request, random_dataset_path):
-    _train_folder = request.config.getoption("--train_folder")
-    if _train_folder is None:
-        return random_dataset_path
-    return _train_folder
+def random_hf_dataset_path(random_dataset_path: Path):
+    parent_path: Path = random_dataset_path.parent
+    temp_path: Path = parent_path / "hf_data"
+    temp_path.mkdir()
 
+    dataset = load_dataset("imagefolder", data_dir=str(random_dataset_path), split="train")
 
-@pytest.fixture(scope="session")
-def val_folder(request, random_dataset_path):
-    _val_folder = request.config.getoption("--val_folder")
-    if _val_folder is None:
-        return random_dataset_path
-    return _val_folder
+    def transforms(examples):
+        examples[DataKeys.INPUT] = [image.convert("RGB") for image in examples["image"]]
+        examples[DataKeys.TARGET] = examples["label"]
+        return examples
+
+    dataset = dataset.map(
+        function=transforms, batched=True, remove_columns=["image", "label"], batch_size=5, writer_batch_size=5
+    )
+    dataset.save_to_disk(str(temp_path))
+    return str(temp_path)

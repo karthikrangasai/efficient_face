@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from datasets import load_from_disk
 from flash import RunningStage
 from flash.core.data.data_module import DataModule
 from flash.core.data.io.input import DataKeys, Input
@@ -26,6 +27,12 @@ class EfficientFaceImageInput(Input):
     def load_sample(self, sample: Dict[DataKeys, Any]) -> Dict[DataKeys, Any]:
         sample[DataKeys.INPUT] = Image.open(sample[DataKeys.INPUT]).convert("RGB")
         return sample
+
+
+class EfficientFaceHFImageInput(Input):
+    def load_data(self, data_folder_path: str) -> List[Dict[DataKeys, Any]]:
+        dataset = load_from_disk(data_folder_path)
+        return dataset
 
 
 class EfficientFaceDataModule(DataModule):
@@ -58,6 +65,44 @@ class EfficientFaceDataModule(DataModule):
             val_input = EfficientFaceImageInput(
                 RunningStage.VALIDATING,
                 Path(val_folder),
+                transform=FaceRecognitionInputTransform(running_stage=RunningStage.VALIDATING, **val_transform_kwargs),
+            )
+
+        return cls(
+            train_input=train_input,
+            val_input=val_input,
+            **data_module_kwargs,
+        )
+
+    @classmethod
+    def from_hf_datasets(
+        cls,
+        train_folder: Optional[str] = None,
+        val_folder: Optional[str] = None,
+        train_transform_kwargs: Optional[Dict] = None,
+        val_transform_kwargs: Optional[Dict] = None,
+        **data_module_kwargs: Any,
+    ) -> "EfficientFaceDataModule":
+
+        train_input = None
+        if train_folder is not None:
+            if train_transform_kwargs is None:
+                train_transform_kwargs = {}
+
+            train_input = EfficientFaceHFImageInput(
+                RunningStage.TRAINING,
+                train_folder,
+                transform=FaceRecognitionInputTransform(running_stage=RunningStage.TRAINING, **train_transform_kwargs),
+            )
+
+        val_input = None
+        if val_folder is not None:
+            if val_transform_kwargs is None:
+                val_transform_kwargs = {}
+
+            val_input = EfficientFaceHFImageInput(
+                RunningStage.VALIDATING,
+                val_folder,
                 transform=FaceRecognitionInputTransform(running_stage=RunningStage.VALIDATING, **val_transform_kwargs),
             )
 

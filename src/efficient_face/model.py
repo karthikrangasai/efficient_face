@@ -300,7 +300,7 @@ class SAMEfficientFaceModel(Task):
         if isinstance(base_optimizer, Tuple):
             optimizers, _lr_schedulers = base_optimizer
             sam_optimizers = [SAM(optimizer=_optimizer) for _optimizer in optimizers]
-            lr_schedulers = [self._instantiate_lr_scheduler(optimizer) for optimizer in sam_optimizers]
+            lr_schedulers = [self._instantiate_lr_scheduler(optimizer)["scheduler"] for optimizer in sam_optimizers]
             del _lr_schedulers
             return sam_optimizers, lr_schedulers
 
