@@ -14,7 +14,11 @@ def transforms(examples):
 
 
 def main(data_folder: str, split: str, output_folder: str, batch_size: int, writer_batch_size: int, num_proc: int):
+    print("[INFO]: Starting `load_dataset`.")
     dataset = load_dataset("imagefolder", data_dir=data_folder, split=split)
+    print("[INFO]: Finished `load_dataset`.")
+
+    print("[INFO]: Starting `dataset.map`.")
     dt0 = datetime.fromtimestamp(time.time())
 
     dataset = dataset.map(
@@ -27,6 +31,7 @@ def main(data_folder: str, split: str, output_folder: str, batch_size: int, writ
     )
 
     dt1 = datetime.fromtimestamp(time.time())
+    print("[INFO]: Finished `dataset.map`.")
     rd = relativedelta.relativedelta(dt1, dt0)
     print(
         "\n"
@@ -35,7 +40,9 @@ def main(data_folder: str, split: str, output_folder: str, batch_size: int, writ
         "\n"
     )
 
+    print("[INFO]: Starting `dataset.save_to_disk`.")
     dataset.save_to_disk(output_folder)
+    print("[INFO]: Finished `dataset.save_to_disk`.")
 
 
 if __name__ == "__main__":
