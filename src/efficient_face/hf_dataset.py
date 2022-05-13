@@ -14,11 +14,11 @@ def transforms(examples):
 
 
 def main(data_folder: str, split: str, output_folder: str, batch_size: int, writer_batch_size: int, num_proc: int):
-    print("[INFO]: Starting `load_dataset`.")
+    print("[INFO]: Starting `load_dataset`.", flush=True)
     dataset = load_dataset("imagefolder", data_dir=data_folder, split=split)
-    print("[INFO]: Finished `load_dataset`.")
+    print("[INFO]: Finished `load_dataset`.", flush=True)
 
-    print("[INFO]: Starting `dataset.map`.")
+    print("[INFO]: Starting `dataset.map`.", flush=True)
     dt0 = datetime.fromtimestamp(time.time())
 
     dataset = dataset.map(
@@ -31,18 +31,19 @@ def main(data_folder: str, split: str, output_folder: str, batch_size: int, writ
     )
 
     dt1 = datetime.fromtimestamp(time.time())
-    print("[INFO]: Finished `dataset.map`.")
+    print("[INFO]: Finished `dataset.map`.", flush=True)
     rd = relativedelta.relativedelta(dt1, dt0)
     print(
         "\n"
         "Total time: "
         f"{rd.years}Y {rd.months}M {rd.days}D {rd.hours}h {rd.minutes}m {rd.seconds}s {rd.microseconds}us"
-        "\n"
+        "\n",
+        flush=True,
     )
 
-    print("[INFO]: Starting `dataset.save_to_disk`.")
+    print("[INFO]: Starting `dataset.save_to_disk`.", flush=True)
     dataset.save_to_disk(output_folder)
-    print("[INFO]: Finished `dataset.save_to_disk`.")
+    print("[INFO]: Finished `dataset.save_to_disk`.", flush=True)
 
 
 if __name__ == "__main__":
