@@ -34,6 +34,12 @@ class EfficientFaceHFImageInput(Input):
         dataset = load_from_disk(data_folder_path)
         return dataset
 
+    def load_sample(self, sample: Dict[DataKeys, Any]) -> Dict[DataKeys, Any]:
+        _sample = {}
+        _sample[DataKeys.INPUT] = sample["image"].convert("RGB")
+        _sample[DataKeys.TARGET] = sample["label"]
+        return _sample
+
 
 class EfficientFaceDataModule(DataModule):
     @classmethod

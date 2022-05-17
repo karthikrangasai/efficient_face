@@ -55,14 +55,5 @@ def random_hf_dataset_path(random_dataset_path: Path):
     temp_path.mkdir()
 
     dataset = load_dataset("imagefolder", data_dir=str(random_dataset_path), split="train")
-
-    def transforms(examples):
-        examples[DataKeys.INPUT] = [image.convert("RGB") for image in examples["image"]]
-        examples[DataKeys.TARGET] = examples["label"]
-        return examples
-
-    dataset = dataset.map(
-        function=transforms, batched=True, remove_columns=["image", "label"], batch_size=5, writer_batch_size=5
-    )
     dataset.save_to_disk(str(temp_path))
     return str(temp_path)

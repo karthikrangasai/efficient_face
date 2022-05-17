@@ -15,12 +15,12 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torchmetrics import Metric
 
 from efficient_face.model_conf import DISTANCES, LOSS_CONFIGURATION
-from efficient_face.sam_optimizer import SAM
+from efficient_face.sam_optimizers import SAM
 
 
 class MetricEmbedding(Module):
     def __init__(self, in_features, unit, use_dropout=False):
-        """L2 Normalized `Dense` layer usually used as output layer.
+        """L2 Normalized `Linear` layer usually used as output layer.
         Args:
             unit: Dimension of the output embbeding. Commonly between
             32 and 512. Larger embeddings usually result in higher accuracy up
