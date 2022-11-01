@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 
 import pytorch_lightning.callbacks as plcb
 import pytorch_lightning.loggers as pll
@@ -9,9 +9,8 @@ from flash import Trainer
 from pytorch_lightning import seed_everything
 
 from efficient_face.data import EfficientFaceDataModule
-from efficient_face.model import EfficientFaceModel, SAMEfficientFaceModel
+from efficient_face.models import MODEL_TYPE
 
-MODEL_TYPE = {"Normal": EfficientFaceModel, "SAM": SAMEfficientFaceModel}
 DATAMODULE_TYPE = {
     "Normal": EfficientFaceDataModule.from_label_class_subfolders,
     "HF": EfficientFaceDataModule.from_hf_datasets,

@@ -44,7 +44,7 @@ class ImprovedTripletMarginLoss(BaseMetricLossFunction):
 
         current_margins = self.distance.margin(ap_dists, an_dists)
 
-        loss = torch.maximum(self.distance.margin(ap_dists - an_dists), self.margin1) + torch.multiply(
+        loss = torch.maximum(current_margins, self.margin1) + torch.multiply(
             torch.maximum(an_dists, self.margin2), self.beta
         )
 
