@@ -26,8 +26,8 @@ setup(
     packages=find_packages(where="src"),
     python_requires=">=3.7",
     install_requires=[
-        "torch==1.11.0",
-        "torchvision==0.12.0",
+        "torch",
+        "torchvision",
         "pytorch-lightning==1.6.2",
         "torchmetrics==0.8.1",
         "lightning-flash==0.7.4",
@@ -37,6 +37,7 @@ setup(
         "pytorch-metric-learning==1.3.0",
         "rich",
         "datasets[vision]==2.2.1",
+        "pre-commit",
     ],
     extras_require=extras,
     classifiers=[

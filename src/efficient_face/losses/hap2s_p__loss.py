@@ -22,14 +22,14 @@ class HAP2S_P_Loss(GenericPairLoss):
         self.smooth_loss = smooth_loss
         self.add_to_recordable_attributes(list_of_names=["margin", "alpha"], is_stat=False)
 
-    def _compute_loss(self, mat, pos_mask, neg_mask):
+    def _compute_loss(self, mat: torch.Tensor, pos_mask: torch.Tensor, neg_mask: torch.Tensor):
         positive_weights = torch.pow(mat + 1, self.alpha) * pos_mask
         weighted_pdist = positive_weights * mat
-        normed_weighted_pdist = torch.sum(weighted_pdist, axis=1) / (torch.sum(positive_weights, axis=1) + 1e-6)
+        normed_weighted_pdist = torch.sum(weighted_pdist, 1) / (torch.sum(positive_weights, 1) + 1e-6)
 
         negative_weights = torch.pow(mat + 1, (-2.0 * self.alpha)) * neg_mask
         weighted_ndist = negative_weights * mat
-        normed_weighted_ndist = torch.sum(weighted_ndist, axis=1) / (torch.sum(negative_weights, axis=1) + 1e-6)
+        normed_weighted_ndist = torch.sum(weighted_ndist, 1) / (torch.sum(negative_weights, 1) + 1e-6)
 
         current_margins = self.distance.margin(normed_weighted_pdist, normed_weighted_ndist)
         if self.smooth_loss:

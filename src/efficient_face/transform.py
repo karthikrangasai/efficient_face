@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple, Union
+from typing import Callable, Tuple, Union
 
 import torch
 from flash.core.data.io.input_transform import InputTransform
@@ -17,6 +17,13 @@ class FaceRecognitionInputTransform(InputTransform):
         return super().__post_init__()
 
     def get_model_preprocessor(self, model_name: str) -> Callable:
+        if model_name.startswith("tf_efficientnetv2"):
+            return T.Compose(
+                [
+                    T.Normalize(mean=[0.0, 0.0, 0.0], std=[255.0, 255.0, 255.0]),
+                    T.Normalize(mean=[0.485, 0.456, 0.406], stdvariance=[0.229, 0.224, 0.225]),
+                ]
+            )
         return T.Lambda(lambda x: x)
 
     def input_per_sample_transform(self) -> Callable:

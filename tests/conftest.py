@@ -36,12 +36,12 @@ def _rand_image():
 @pytest.fixture(scope="session")
 def random_dataset_path(tmp_path_factory: Path):
     temp_path: Path = tmp_path_factory.mktemp("data")
-    for i in range(10):
+    for i in range(20):
         if (i % 2) == 0:
             d = temp_path / f"class{i/2}"
             d.mkdir()
-            for j in range(20):
-                _rand_image().save(d / "image_{j}.jpg")
+            for j in range(40):
+                _rand_image().save(d / f"image_{j}.jpg")
         else:
             d = temp_path / f"text_file_{i//2}.txt"
             d.write_text("Hello, World.")
@@ -56,4 +56,12 @@ def random_hf_dataset_path(random_dataset_path: Path):
 
     dataset = load_dataset("imagefolder", data_dir=str(random_dataset_path), split="train")
     dataset.save_to_disk(str(temp_path))
+    return str(temp_path)
+
+
+@pytest.fixture(scope="session")
+def random_cifar10_path(random_dataset_path: Path):
+    parent_path: Path = random_dataset_path.parent
+    temp_path: Path = parent_path / "cifar10"
+    temp_path.mkdir()
     return str(temp_path)
