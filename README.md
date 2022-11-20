@@ -11,6 +11,8 @@ ARXIV
 [![Paper](http://img.shields.io/badge/arxiv-math.co:1480.1111-B31B1B.svg)](https://www.nature.com/articles/nature14539)
 -->
 [![CI testing](https://github.com/karthikrangasai/efficient_face/actions/workflows/ci-testing.yml/badge.svg)](https://github.com/karthikrangasai/efficient_face/actions/workflows/ci-testing.yml)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 
 <!--
 Conference
@@ -31,33 +33,29 @@ cd efficient_face
 pip install -e .
 pip install -r requirements.txt
  ```
- Next, navigate to any file and run it.
+ <!-- Next, navigate to any file and run it.
  ```bash
 # module folder
 cd src/efficient_face
 
 # run module (example: mnist as your main contribution)
 python train.py
-```
+``` -->
 
-## Imports
+## Usage
 This project is setup as a package which means you can now easily import any file into any other file like so:
 ```python
 
 from flash import Trainer
-from efficient_face.data.datasets import FaceRecognitionDataModule
-from efficient_face.model import FaceRecognitionModel, SAMFaceRecognitionModel
+from efficient_face.data import ciFAIRDataModule
+from efficient_face.model import TripletLossBasedTask, SoftmaxBasedTask
 
 
 # data
-datamodule = FaceRecognitionDataModule.from_label_class_subfolders(
-    train_folder="<path to data>",
-    val_folder="<path to data>",
-    batch_size=32,
-)
+datamodule = ciFAIRDataModule.load_ciFAIR10(batch_size=8)
 
 # model
-model = SAMFaceRecognitionModel()
+model = TripletLossBasedTask()
 
 # train
 trainer = Trainer()
