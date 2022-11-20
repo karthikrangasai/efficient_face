@@ -1,6 +1,8 @@
+from typing import Any, Dict
+
 import torch
 import torch.nn.functional as F
-from pytorch_metric_learning.distances import LpDistance
+from pytorch_metric_learning.distances import BaseDistance, LpDistance
 from pytorch_metric_learning.losses.generic_pair_loss import GenericPairLoss
 from pytorch_metric_learning.utils import common_functions as c_f
 
@@ -14,14 +16,16 @@ class HAP2S_E_Loss(GenericPairLoss):
         base: The shift in the exponent applied to both positive and negative pairs
     """
 
-    def __init__(self, margin=0.2, sigma=0.5, smooth_loss=False, **kwargs):
+    def __init__(self, margin: float = 0.2, sigma: float = 0.5, smooth_loss: bool = False, **kwargs: Any) -> None:
         super().__init__(mat_based_loss=True, **kwargs)
         self.margin = margin
         self.sigma = sigma
         self.smooth_loss = smooth_loss
         self.add_to_recordable_attributes(list_of_names=["margin", "sigma"], is_stat=False)
 
-    def _compute_loss(self, mat: torch.Tensor, pos_mask: torch.Tensor, neg_mask: torch.Tensor):
+    def _compute_loss(
+        self, mat: torch.Tensor, pos_mask: torch.Tensor, neg_mask: torch.Tensor
+    ) -> Dict[str, Dict[str, Any]]:
         positive_weights = torch.exp(mat / self.sigma) * pos_mask
         weighted_pdist = positive_weights * mat
         normed_weighted_pdist = torch.sum(weighted_pdist, 1) / (torch.sum(positive_weights, 1) + 1e-6)
@@ -44,5 +48,5 @@ class HAP2S_E_Loss(GenericPairLoss):
             }
         }
 
-    def get_default_distance(self):
+    def get_default_distance(self) -> BaseDistance:
         return LpDistance()

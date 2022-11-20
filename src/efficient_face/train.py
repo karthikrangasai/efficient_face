@@ -2,19 +2,13 @@ from argparse import ArgumentParser
 from typing import Any, Dict
 
 import pytorch_lightning.callbacks as plcb
-import pytorch_lightning.loggers as pll
-import pytorch_lightning.plugins.environments.slurm_environment as slurm
 import yaml
 from flash import Trainer
 from pytorch_lightning import seed_everything
+from pytorch_lightning.loggers.wandb import WandbLogger
 
-from efficient_face.data import EfficientFaceDataModule
+from efficient_face.data import ciFAIRDataModule
 from efficient_face.models import MODEL_TYPE
-
-DATAMODULE_TYPE = {
-    "Normal": EfficientFaceDataModule.from_label_class_subfolders,
-    "HF": EfficientFaceDataModule.from_hf_datasets,
-}
 
 
 def train(train_args: Dict[str, Any]) -> None:
@@ -23,10 +17,7 @@ def train(train_args: Dict[str, Any]) -> None:
     message = f"Loss configuration for {triplet_strategy} is not defined."
     assert triplet_strategy not in ["ADAPTIVE", "ASSORTED", "CONSTELLATION"], message
 
-    datamodule_type: str = train_args["data_module"].pop("data_module_type")
-    assert datamodule_type in DATAMODULE_TYPE.keys(), f"[ERROR]: {datamodule_type} is not yet implementated."
-    datamodule_method = DATAMODULE_TYPE[datamodule_type]
-    datamodule = datamodule_method(**train_args["data_module"])
+    datamodule = ciFAIRDataModule(**train_args["data_module"])
 
     model_type: str = train_args["model"].pop("model_type")
     assert model_type in ["Normal", "SAM"], f"[ERROR]: {model_type} is not yet implementated."
@@ -50,12 +41,11 @@ def train(train_args: Dict[str, Any]) -> None:
     ]
 
     # init logger
-    logger = pll.WandbLogger(**train_args["logger"])
+    logger = WandbLogger(**train_args["logger"])
 
     trainer = Trainer(
         callbacks=callbacks,
         logger=logger,
-        plugins=[slurm.SLURMEnvironment(auto_requeue=True)],
         **train_args["trainer"],
     )
     trainer.fit(model, datamodule=datamodule)
