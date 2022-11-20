@@ -1,16 +1,14 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from flash.core.data.io.input import DataKeys
 from flash.core.model import OutputKeys, Task
 from flash.core.utilities.types import LR_SCHEDULER_TYPE, OPTIMIZER_TYPE
 from torch import Tensor
-from torch.nn import CrossEntropyLoss, ModuleDict
-from torchmetrics import Metric
+from torch.nn import CrossEntropyLoss
 from torchmetrics.functional.classification.accuracy import accuracy
 from torchmetrics.functional.classification.precision_recall import precision, recall
 
-from efficient_face.model_conf import DISTANCES, LOSS_CONFIGURATION
-from efficient_face.models.utils import BackboneModel, SoftmaxBackboneModel
+from efficient_face.models.utils import SoftmaxBackboneModel
 
 
 class SoftmaxBasedTask(Task):
@@ -22,7 +20,7 @@ class SoftmaxBasedTask(Task):
         learning_rate: Optional[float] = 1e-3,
         optimizer: OPTIMIZER_TYPE = "Adam",
         lr_scheduler: LR_SCHEDULER_TYPE = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
 
         super().__init__(

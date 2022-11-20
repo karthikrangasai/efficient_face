@@ -5,13 +5,13 @@ import numpy as np
 from PIL import Image
 
 
-def _rand_image():
+def _rand_image() -> Image.Image:
     _size = np.random.choice([196, 244])
     size = (_size, _size)
     return Image.fromarray(np.random.randint(0, 255, (*size, 3), dtype="uint8"))
 
 
-def random_dataset_path(path: str):
+def random_dataset_path(path: str) -> Path:
     temp_path: Path = Path(path)
     temp_path = temp_path / "data_example"
     for i in range(20):

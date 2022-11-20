@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from inspect import isfunction, ismethod
-from typing import Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from dateutil import relativedelta
 
@@ -15,9 +15,8 @@ def get_name(function: Callable) -> str:
     return fn_name
 
 
-def profile(function: Callable, fn_kwargs: Dict = None):
-    if fn_kwargs is None:
-        fn_kwargs = {}
+def profile(function: Callable[..., Any], fn_kwargs: Optional[Dict[str, Any]] = None) -> Any:
+    fn_kwargs = dict() if fn_kwargs is None else fn_kwargs
 
     fn_name = get_name(function=function)
 

@@ -1,16 +1,14 @@
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Union
 
 import torch
 from flash.core.data.io.input import DataKeys
 from flash.core.model import OutputKeys, Task
 from flash.core.utilities.types import LR_SCHEDULER_TYPE, OPTIMIZER_TYPE
-from pytorch_metric_learning.losses.base_metric_loss_function import BaseMetricLossFunction
-from torch import Tensor
 from torch.nn import ModuleDict
 from torchmetrics import Metric
 
-from efficient_face.model_conf import DISTANCES, LOSS_CONFIGURATION
-from efficient_face.models.utils import BackboneModel
+from efficient_face.losses import DISTANCES, LOSS_CONFIGURATION
+from efficient_face.models.utils import TripletLossBackboneModel
 
 
 class TripletLossBasedTask(Task):
@@ -25,7 +23,7 @@ class TripletLossBasedTask(Task):
         loss_func_kwargs: Optional[Dict[str, Any]] = None,
         optimizer: OPTIMIZER_TYPE = "Adam",
         lr_scheduler: LR_SCHEDULER_TYPE = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         if loss_func_kwargs is None:
             loss_func_kwargs = {}
@@ -33,7 +31,7 @@ class TripletLossBasedTask(Task):
             miner_kwargs = {}
 
         super().__init__(
-            model=BackboneModel(model_name=model_name, embedding_size=embedding_size),
+            model=TripletLossBackboneModel(model_name=model_name, embedding_size=embedding_size),
             loss_fn=None,
             learning_rate=learning_rate,
             optimizer=optimizer,
@@ -41,10 +39,12 @@ class TripletLossBasedTask(Task):
             **kwargs,
         )
 
-        self.miner = LOSS_CONFIGURATION[triplet_strategy]["miner"](**miner_kwargs)
-        self.loss_fn: Type[BaseMetricLossFunction] = LOSS_CONFIGURATION[triplet_strategy]["loss_func"](
-            distance=DISTANCES[distance_metric], **loss_func_kwargs
-        )
+        loss_configuration = LOSS_CONFIGURATION[triplet_strategy]
+        distance_func = DISTANCES[distance_metric]
+
+        self.miner = loss_configuration.miner(**miner_kwargs)
+        self.loss_fn = loss_configuration.loss_func(distance=distance_func, **loss_func_kwargs)
+
         self.train_metrics = ModuleDict({})
         self.test_metrics = ModuleDict({})
         self.save_hyperparameters(
@@ -63,7 +63,7 @@ class TripletLossBasedTask(Task):
         labels = batch[DataKeys.TARGET]
         embeddings = self.model(inputs)
         hard_pairs = self.miner(embeddings, labels)
-        loss: Tensor = self.loss_fn(embeddings, labels, hard_pairs)  # type: ignore
+        loss = self.loss_fn(embeddings, labels, hard_pairs)
 
         logs = {}
 

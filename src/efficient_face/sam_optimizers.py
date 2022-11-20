@@ -1,4 +1,5 @@
-from typing import Callable, List, Optional, Tuple
+# type: ignore
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 from torch.distributions.bernoulli import Bernoulli
@@ -50,7 +51,7 @@ class SAM(Optimizer):
                 param.sub_(e_w)
         self.base_optimizer.step()
 
-    def step(self, closure: Callable = None) -> None:
+    def step(self, closure: Callable[[], float]) -> None:
         assert closure is not None, "SAM Optimizer requires a closure which runs the training step."
         self.compute_and_add_e_w()
         self.zero_grad()
@@ -58,7 +59,7 @@ class SAM(Optimizer):
             closure()
         self.subtract_e_w_and_step_optimizer()
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         super().load_state_dict(state_dict)
         self.base_optimizer.param_groups = self.param_groups
 
@@ -96,7 +97,7 @@ class ESAM(Optimizer):
         )
 
     @torch.no_grad()
-    def stochastic_weight_perturbation_and_assign_perturbation(self):
+    def stochastic_weight_perturbation_and_assign_perturbation(self) -> None:
         grad_norm = torch.pow(self._grad_norm(), 1 / self.p)
         scaled_inverse_grad_norm = self.rho / (grad_norm + 1e-12) / (1 - self.beta)
         for param_group in self.param_groups:
@@ -149,7 +150,7 @@ class ESAM(Optimizer):
                 int,
                 Callable[[Optional[List[int]], bool], torch.Tensor],
             ],
-        ] = None,
+        ],
     ) -> None:
         assert closure is not None, "ESAM Optimizer requires a closure which runs the training step."
         # First forward and backward passes have been completed when code reaches here.
@@ -159,7 +160,7 @@ class ESAM(Optimizer):
         self.stochastic_weight_perturbation_and_assign_perturbation()
         self.zero_grad()
         with torch.no_grad():
-            new_loss: torch.Tensor = closure_fn(hard_pair_indices=indices)
+            new_loss: torch.Tensor = closure_fn(hard_pair_indices=indices)  # type: ignore
 
         indices = self.sharpness_sensitive_data_selection(loss, new_loss, num_pairs, indices)
         with torch.enable_grad():
@@ -167,6 +168,6 @@ class ESAM(Optimizer):
 
         self.subtract_e_w_and_step_optimizer()
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         super().load_state_dict(state_dict)
         self.base_optimizer.param_groups = self.param_groups
