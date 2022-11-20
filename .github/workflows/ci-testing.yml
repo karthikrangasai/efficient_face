@@ -27,14 +27,17 @@ jobs:
       - name: Install Dependencies
         shell: bash
         run: |
-          python -m pip install -r requirements.txt --quiet --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+          python -m pip install virtualenv
+          virtualenv .venv -p /usr/bin/python3.8
+          .venv/bin/python -m pip install -r requirements.txt --quiet --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
 
       - name: Install package
         shell: bash
         run: |
-          python -m pip install -e ".[dev]"
+          .venv/bin/python -m pip install -e ".[dev]"
           pip list
 
       - name: Tests
         run: |
-          pytest tests -vv
+          .venv/bin/activate
+          pre-commit run --verbose
