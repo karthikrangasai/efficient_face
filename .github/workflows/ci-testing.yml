@@ -39,5 +39,5 @@ jobs:
 
       - name: Tests
         run: |
-          .venv/bin/activate
+          source .venv/bin/activate
           pre-commit run --verbose
