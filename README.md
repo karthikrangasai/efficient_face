@@ -23,7 +23,14 @@ Conference
 Curation of various TripletLoss approaches described in Deep Learning Literature.
 
 ## How to run
-First, install dependencies
+Install as a python package
+
+```bash
+pip install git+https://github.com/karthikrangasai/efficient_face.git@master
+```
+
+
+Building from source
 ```bash
 # clone project
 git clone https://github.com/karthikrangasai/efficient_face
@@ -31,35 +38,21 @@ git clone https://github.com/karthikrangasai/efficient_face
 # install project
 cd efficient_face
 pip install -e .
-pip install -r requirements.txt
  ```
- <!-- Next, navigate to any file and run it.
- ```bash
-# module folder
-cd src/efficient_face
-
-# run module (example: mnist as your main contribution)
-python train.py
-``` -->
 
 ## Usage
 This project is setup as a package which means you can now easily import any file into any other file like so:
 ```python
-
-from flash import Trainer
+from pytorch_lightning import Trainer, seed_everything
 from efficient_face.data import ciFAIRDataModule
-from efficient_face.model import TripletLossBasedTask, SoftmaxBasedTask
+from efficient_face.models import SoftmaxBasedModel, TripletLossBasedModel
 
-
-# data
-datamodule = ciFAIRDataModule.load_ciFAIR10(batch_size=8)
-
-# model
-model = TripletLossBasedTask()
-
-# train
+seed_everything(1234)
+datamodule = ciFAIRDataModule(batch_size=4)
+model = SoftmaxBasedModel()  # or TripletLossBasedModel()
 trainer = Trainer()
 trainer.fit(model, datamodule=datamodule)
+
 ```
 
 <!-- ### Citation

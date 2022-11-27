@@ -18,6 +18,7 @@ class ciFAIRDataModule(LightningDataModule):
         model_name: str = "efficientnet_b0",
         image_size: Union[int, Tuple[int, int]] = 226,
         crop_size: Union[int, Tuple[int, int]] = 224,
+        num_workers: int = 2,
     ) -> None:
 
         super().__init__()
@@ -27,7 +28,7 @@ class ciFAIRDataModule(LightningDataModule):
         self.model_name = model_name
         self.image_size = image_size
         self.crop_size = crop_size
-
+        self.num_workers = num_workers
         self.image_transform = get_image_transform(
             model_name=self.model_name,
             image_size=self.image_size,
@@ -58,9 +59,23 @@ class ciFAIRDataModule(LightningDataModule):
         )
 
     def train_dataloader(self) -> DataLoader:
-        train_dataloader = DataLoader(self.train_set, self.batch_size, shuffle=True, pin_memory=True, num_workers=2)
+        train_dataloader = DataLoader(
+            self.train_set,
+            self.batch_size,
+            shuffle=True,
+            pin_memory=True,
+            num_workers=self.num_workers,
+            persistent_workers=True,
+        )
         return train_dataloader
 
     def val_dataloader(self) -> DataLoader:
-        val_dataloader = DataLoader(self.val_set, self.batch_size, shuffle=False, pin_memory=True, num_workers=2)
+        val_dataloader = DataLoader(
+            self.val_set,
+            self.batch_size,
+            shuffle=False,
+            pin_memory=True,
+            num_workers=self.num_workers,
+            persistent_workers=True,
+        )
         return val_dataloader
