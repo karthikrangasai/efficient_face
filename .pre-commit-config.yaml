@@ -51,12 +51,12 @@ repos:
       - id: check-added-large-files
       - id: check-executables-have-shebangs
 
-  # - repo: local
-  #   hooks:
-  #     - id: pytest
-  #       name: Testing the code
-  #       entry: pytest tests -vv
-  #       language: system
-  #       types: [python]
-  #       pass_filenames: false
-  #       always_run: true
+  - repo: local
+    hooks:
+      - id: pytest
+        name: Testing the code
+        entry: pytest tests -vv
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true

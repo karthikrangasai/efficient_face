@@ -1,68 +1,79 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Type, Union
 
-from flash.core.data.io.input import DataKeys
-from flash.core.model import OutputKeys, Task
-from flash.core.utilities.types import LR_SCHEDULER_TYPE, OPTIMIZER_TYPE
+from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.nn import CrossEntropyLoss
-from torchmetrics.functional.classification.accuracy import accuracy
-from torchmetrics.functional.classification.precision_recall import precision, recall
+from torch.optim import Adam, Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
 
-from efficient_face.models.utils import SoftmaxBackboneModel
+from efficient_face.losses import DISTANCES, LOSS_CONFIGURATION
+from efficient_face.models.utils import LR_SCHEDULERS, OPTIMIZERS, SoftmaxBackboneModel
 
 
-class SoftmaxBasedTask(Task):
+class SoftmaxBasedModel(LightningModule):
     def __init__(
         self,
         model_name: str = "efficientnet_b0",
         embedding_size: int = 128,
-        num_classes: int = 10,
-        learning_rate: Optional[float] = 1e-3,
-        optimizer: OPTIMIZER_TYPE = "Adam",
-        lr_scheduler: LR_SCHEDULER_TYPE = None,
-        **kwargs: Any,
+        distance_metric: str = "L2",
+        triplet_strategy: str = "VANILLA",
+        miner_kwargs: Optional[Dict[str, Any]] = None,
+        loss_func_kwargs: Optional[Dict[str, Any]] = None,
+        learning_rate: float = 1e-3,
+        optimizer: Type[Optimizer] = Adam,
+        optimizer_kwargs: Optional[Dict[str, Any]] = None,
+        lr_scheduler: Optional[Type[_LRScheduler]] = None,
+        lr_scheduler_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
+        super().__init__()
+        self.model = SoftmaxBackboneModel(model_name=model_name, embedding_size=embedding_size, num_classes=10)
+        self.train_loss_fn = CrossEntropyLoss()
+        self.learning_rate = learning_rate
+        self.optimizer_cls = optimizer
+        self.lr_scheduler_cls = lr_scheduler
+        self.optimizer_kwargs = optimizer_kwargs if optimizer_kwargs is not None else dict(lr=self.learning_rate)
+        self.lr_scheduler_kwargs = lr_scheduler_kwargs if lr_scheduler_kwargs is not None else dict()
 
-        super().__init__(
-            model=SoftmaxBackboneModel(model_name=model_name, embedding_size=embedding_size, num_classes=num_classes),
-            loss_fn=None,
-            learning_rate=learning_rate,
-            optimizer=optimizer,
-            lr_scheduler=lr_scheduler,
-            **kwargs,
-        )
-        self.loss_fn = CrossEntropyLoss()
+        loss_configuration = LOSS_CONFIGURATION[triplet_strategy]
+        distance_func = DISTANCES[distance_metric]
+
+        miner_kwargs = dict() if miner_kwargs is None else miner_kwargs
+        val_loss_func_kwargs = dict() if loss_func_kwargs is None else loss_func_kwargs
+
+        self.miner = loss_configuration.miner(**miner_kwargs)
+        self.val_loss_fn = loss_configuration.loss_func(distance=distance_func, **val_loss_func_kwargs)
 
         self.save_hyperparameters(
-            "learning_rate",
-            "optimizer",
             "model_name",
             "embedding_size",
-            "num_classes",
+            "learning_rate",
+            "optimizer",
             "lr_scheduler",
-            ignore=["model", "backbone", "head", "adapter"],
+            ignore=["model", "loss_fn"],
         )
 
-    def step(self, batch: Dict[DataKeys, Any], batch_idx: int) -> Dict[OutputKeys, Any]:
-        inputs = batch[DataKeys.INPUT]
-        labels = batch[DataKeys.TARGET]
-        y_pred = self.model(inputs)
-        loss: Tensor = self.loss_fn(y_pred, labels)
+    def step(self, batch: List[Tensor], batch_idx: int, stage: str) -> Tensor:
+        inputs, labels = batch
+        pred = self.model(inputs.float())
+        loss_fn = getattr(self, f"{stage}_loss_fn")  # type: ignore
+        loss: Tensor = loss_fn(pred, labels)
 
-        logs = {}
+        self.log(f"{stage}_loss", loss, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
+        self.log("batch_size", labels.shape[0], logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
 
-        output = {OutputKeys.OUTPUT: y_pred}
+        return loss
 
-        logs["accuracy"] = accuracy(y_pred, labels)
-        logs["preicsion"] = precision(y_pred, labels)
-        logs["recall"] = recall(y_pred, labels)
+    def training_step(self, batch: List[Tensor], batch_idx: int) -> Tensor:
+        return self.step(batch, batch_idx, stage="train")
 
-        output[OutputKeys.LOSS] = loss
-        output[OutputKeys.LOGS] = self.compute_logs(logs, loss)
-        output[OutputKeys.TARGET] = labels
-        output[OutputKeys.BATCH_SIZE] = labels.shape[0] if isinstance(labels, Tensor) else None
-        return output
+    def validation_step(self, batch: List[Tensor], batch_idx: int) -> Tensor:
+        return self.step(batch, batch_idx, stage="val")
 
-    def compute_logs(self, logs: Dict[str, Any], loss: Tensor) -> Dict[str, Any]:
-        logs.update({"loss": loss})
-        return logs
+    def configure_optimizers(self) -> Dict[str, Union[Optimizer, _LRScheduler]]:
+        optimizer_dict: Dict[str, Union[Optimizer, _LRScheduler]] = dict()
+
+        optimizer_dict["optimizer"] = self.optimizer_cls(params=self.model.parameters(), **self.optimizer_kwargs)  # type: ignore
+
+        if self.lr_scheduler_cls is not None:
+            optimizer_dict["lr_scheduler"] = self.lr_scheduler_cls(**self.lr_scheduler_kwargs)
+        return optimizer_dict

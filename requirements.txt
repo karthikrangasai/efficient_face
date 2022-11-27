@@ -3,14 +3,12 @@ torchvision==0.14.0
 
 pytorch-lightning==1.7.7
 torchmetrics==0.10.3
-lightning-flash==0.8.1
 
 timm==0.6.11
 wandb==0.13.5
 torch_optimizer==0.3.0
 pytorch-metric-learning==1.6.3
 rich
-datasets[vision]==2.2.1
 
 pre-commit==2.20.0
 pre-commit-hooks==4.3.0

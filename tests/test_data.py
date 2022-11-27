@@ -1,31 +1,30 @@
-# from pathlib import Path
-# from typing import Any, Dict, List, Tuple
+from pathlib import Path
+from typing import List, Tuple
 
-# from flash.core.data.io.input import DataKeys
-# from pytorch_lightning import seed_everything
-# from torch import Tensor
-# from torch.utils.data import DataLoader
+from pytorch_lightning import seed_everything
+from torch import Tensor
 
-# from efficient_face.data import ciFAIRDataModule
+from efficient_face.data import ciFAIRDataModule
 
 
-# def assert_batch_values(batch: Dict[DataKeys, Any]) -> None:
-#     assert DataKeys.INPUT in batch.keys()
-#     assert DataKeys.TARGET in batch.keys()
+def assert_batch_values(batch: List[Tensor]) -> None:
+    assert len(batch) == 2
 
-#     assert isinstance(batch[DataKeys.INPUT], Tensor)
-#     assert isinstance(batch[DataKeys.TARGET], Tensor)
+    assert isinstance(batch[0], Tensor)
+    assert isinstance(batch[1], Tensor)
 
 
-# def test_data_loading(random_dataset_path: Path) -> None:
-#     seed_everything(1234)
+def test_data_loading() -> None:
+    seed_everything(1234)
 
-#     datamodule = ciFAIRDataModule.load_ciFAIR10(root=random_dataset_path, batch_size=4)
+    datamodule = ciFAIRDataModule(batch_size=4)
+    datamodule.prepare_data()
+    datamodule.setup()
 
-#     train_dataloader: DataLoader = datamodule.train_dataloader()  # type: ignore
-#     batch: Dict[DataKeys, Any] = next(iter(train_dataloader))
-#     assert_batch_values(batch)
+    train_dataloader = datamodule.train_dataloader()  # type: ignore
+    batch: List[Tensor] = next(iter(train_dataloader))
+    assert_batch_values(batch)
 
-#     val_dataloader: DataLoader = datamodule.val_dataloader()  # type: ignore
-#     batch = next(iter(val_dataloader))
-#     assert_batch_values(batch)
+    val_dataloader = datamodule.val_dataloader()  # type: ignore
+    batch = next(iter(val_dataloader))
+    assert_batch_values(batch)
