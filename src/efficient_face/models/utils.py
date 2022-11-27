@@ -1,7 +1,14 @@
+from typing import Dict, Type
+
 import timm
 import torch
 from torch.nn import Dropout, Identity, Linear, Module, Sequential
 from torch.nn.functional import normalize
+from torch.optim import Adam, Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
+
+OPTIMIZERS: Dict[str, Type[Optimizer]] = dict(adam=Adam)
+LR_SCHEDULERS: Dict[str, Type[_LRScheduler]] = dict()
 
 
 class MetricEmbedding(Module):
@@ -42,7 +49,7 @@ class TripletLossBackboneModel(torch.nn.Module):
 class SoftmaxBackboneModel(torch.nn.Module):
     def __init__(self, model_name: str = "efficientnet_b0", embedding_size: int = 128, num_classes: int = 10) -> None:
         if num_classes not in [10, 100]:
-            raise ValueError("CIFAR has either 10 or 100 classes.")
+            raise ValueError("ciFAIR has either 10 or 100 classes.")
         super().__init__()
         self.backbone = timm.create_model(model_name, pretrained=True, num_classes=0)
         self.backbone.classifier = MetricEmbedding(
@@ -54,5 +61,6 @@ class SoftmaxBackboneModel(torch.nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.backbone(x)
-        x = self.linear(x)
+        if torch.is_grad_enabled():
+            return self.linear(x)
         return x

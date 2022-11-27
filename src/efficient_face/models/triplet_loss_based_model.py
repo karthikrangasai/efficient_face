@@ -1,43 +1,40 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
-import torch
-from flash.core.data.io.input import DataKeys
-from flash.core.model import OutputKeys, Task
-from flash.core.utilities.types import LR_SCHEDULER_TYPE, OPTIMIZER_TYPE
-from torch.nn import ModuleDict
-from torchmetrics import Metric
+from pytorch_lightning import LightningModule
+from torch import Tensor
+from torch.optim import Adam, Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
 
 from efficient_face.losses import DISTANCES, LOSS_CONFIGURATION
-from efficient_face.models.utils import TripletLossBackboneModel
+from efficient_face.models.utils import LR_SCHEDULERS, OPTIMIZERS, TripletLossBackboneModel
 
 
-class TripletLossBasedTask(Task):
+class TripletLossBasedModel(LightningModule):
     def __init__(
         self,
         model_name: str = "efficientnet_b0",
         embedding_size: int = 128,
         distance_metric: str = "L2",
         triplet_strategy: str = "VANILLA",
-        learning_rate: Optional[float] = 1e-3,
         miner_kwargs: Optional[Dict[str, Any]] = None,
         loss_func_kwargs: Optional[Dict[str, Any]] = None,
-        optimizer: OPTIMIZER_TYPE = "Adam",
-        lr_scheduler: LR_SCHEDULER_TYPE = None,
-        **kwargs: Any,
+        learning_rate: float = 1e-3,
+        optimizer: Type[Optimizer] = Adam,
+        optimizer_kwargs: Optional[Dict[str, Any]] = None,
+        lr_scheduler: Optional[Type[_LRScheduler]] = None,
+        lr_scheduler_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
-        if loss_func_kwargs is None:
-            loss_func_kwargs = {}
-        if miner_kwargs is None:
-            miner_kwargs = {}
+        super().__init__()
+        loss_func_kwargs = dict() if loss_func_kwargs is None else loss_func_kwargs
+        miner_kwargs = dict() if miner_kwargs is None else miner_kwargs
 
-        super().__init__(
-            model=TripletLossBackboneModel(model_name=model_name, embedding_size=embedding_size),
-            loss_fn=None,
-            learning_rate=learning_rate,
-            optimizer=optimizer,
-            lr_scheduler=lr_scheduler,
-            **kwargs,
-        )
+        self.model = TripletLossBackboneModel(model_name=model_name, embedding_size=embedding_size)
+
+        self.learning_rate = learning_rate
+        self.optimizer_cls = optimizer
+        self.lr_scheduler_cls = lr_scheduler
+        self.optimizer_kwargs = optimizer_kwargs if optimizer_kwargs is not None else dict(lr=self.learning_rate)
+        self.lr_scheduler_kwargs = lr_scheduler_kwargs if lr_scheduler_kwargs is not None else dict()
 
         loss_configuration = LOSS_CONFIGURATION[triplet_strategy]
         distance_func = DISTANCES[distance_metric]
@@ -45,44 +42,39 @@ class TripletLossBasedTask(Task):
         self.miner = loss_configuration.miner(**miner_kwargs)
         self.loss_fn = loss_configuration.loss_func(distance=distance_func, **loss_func_kwargs)
 
-        self.train_metrics = ModuleDict({})
-        self.test_metrics = ModuleDict({})
         self.save_hyperparameters(
             "learning_rate",
-            "optimizer",
             "model_name",
             "embedding_size",
             "distance_metric",
             "triplet_strategy",
             "loss_func_kwargs",
-            ignore=["model", "backbone", "head", "adapter"],
+            "optimizer",
+            "lr_scheduler",
+            ignore=["model"],
         )
 
-    def step(self, batch: Dict[DataKeys, Any], batch_idx: int, metrics: ModuleDict) -> Dict[OutputKeys, Any]:
-        inputs = batch[DataKeys.INPUT]
-        labels = batch[DataKeys.TARGET]
-        embeddings = self.model(inputs)
-        hard_pairs = self.miner(embeddings, labels)
-        loss = self.loss_fn(embeddings, labels, hard_pairs)
+    def step(self, batch: List[Tensor], batch_idx: int, stage: str) -> Tensor:
+        inputs, labels = batch
+        embeddings = self.model(inputs.float())
+        loss = self.loss_fn(embeddings, labels, self.miner(embeddings, labels))
 
-        logs = {}
+        self.log(f"{stage}_loss", loss, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
+        self.log("batch_size", labels.shape[0], logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
 
-        output = {OutputKeys.OUTPUT: embeddings}
-        metric_embeddings = self.to_metrics_format(output[OutputKeys.OUTPUT])
+        return loss
 
-        for name, metric in metrics.items():
-            if isinstance(metric, Metric):
-                metric(metric_embeddings, labels)
-                logs[name] = metric
-            else:
-                logs[name] = metric(metric_embeddings, labels)
+    def training_step(self, batch: List[Tensor], batch_idx: int) -> Tensor:
+        return self.step(batch, batch_idx, stage="train")
 
-        output[OutputKeys.LOSS] = loss
-        output[OutputKeys.LOGS] = self.compute_logs(logs, loss)
-        output[OutputKeys.TARGET] = labels
-        output[OutputKeys.BATCH_SIZE] = labels.shape[0] if isinstance(labels, torch.Tensor) else None
-        return output
+    def validation_step(self, batch: List[Tensor], batch_idx: int) -> Tensor:
+        return self.step(batch, batch_idx, stage="val")
 
-    def compute_logs(self, logs: Dict[str, Any], loss: torch.Tensor) -> Dict[str, Any]:
-        logs.update({"loss": loss})
-        return logs
+    def configure_optimizers(self) -> Dict[str, Union[Optimizer, _LRScheduler]]:
+        optimizer_dict: Dict[str, Union[Optimizer, _LRScheduler]] = dict()
+
+        optimizer_dict["optimizer"] = self.optimizer_cls(params=self.model.parameters(), **self.optimizer_kwargs)  # type: ignore
+
+        if self.lr_scheduler_cls is not None:
+            optimizer_dict["lr_scheduler"] = self.lr_scheduler_cls(**self.lr_scheduler_kwargs)
+        return optimizer_dict

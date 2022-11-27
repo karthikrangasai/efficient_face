@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple
 
 import pytest
 
@@ -29,8 +30,9 @@ import pytest
 
 
 @pytest.fixture(scope="session")
-def random_dataset_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def random_dataset_and_logs_path(tmp_path_factory: pytest.TempPathFactory) -> Tuple[Path, Path]:
     temp_path: Path = tmp_path_factory.mktemp("data")
+    logs_path: Path = tmp_path_factory.mktemp("logs")
     # for i in range(20):
     #     if (i % 2) == 0:
     #         d = temp_path / f"class{i/2}"
@@ -40,7 +42,7 @@ def random_dataset_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
     #     else:
     #         d = temp_path / f"text_file_{i//2}.txt"
     #         d.write_text("Hello, World.")
-    return temp_path
+    return temp_path, logs_path
 
 
 # @pytest.fixture(scope="session")

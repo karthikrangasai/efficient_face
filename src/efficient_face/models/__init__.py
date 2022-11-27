@@ -1,5 +1,5 @@
-from efficient_face.models.softmax_based_model import SoftmaxBasedTask
-from efficient_face.models.triplet_loss_based_model import TripletLossBasedTask
+from efficient_face.models.softmax_based_model import SoftmaxBasedModel
+from efficient_face.models.triplet_loss_based_model import TripletLossBasedModel
 
-__all__ = ["TripletLossBasedTask", "SoftmaxBasedTask"]
-MODEL_TYPE = {"softmax": SoftmaxBasedTask, "triplet_loss": TripletLossBasedTask}
+__all__ = ["TripletLossBasedModel", "SoftmaxBasedModel"]
+MODEL_TYPE = {"softmax": SoftmaxBasedModel, "triplet_loss": TripletLossBasedModel}
