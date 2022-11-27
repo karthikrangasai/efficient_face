@@ -7,7 +7,7 @@ from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from efficient_face.losses import DISTANCES, LOSS_CONFIGURATION
-from efficient_face.models.utils import LR_SCHEDULERS, OPTIMIZERS, SoftmaxBackboneModel
+from efficient_face.models.utils import SoftmaxBackboneModel
 
 
 class SoftmaxBasedModel(LightningModule):
@@ -72,8 +72,14 @@ class SoftmaxBasedModel(LightningModule):
     def configure_optimizers(self) -> Dict[str, Union[Optimizer, _LRScheduler]]:
         optimizer_dict: Dict[str, Union[Optimizer, _LRScheduler]] = dict()
 
-        optimizer_dict["optimizer"] = self.optimizer_cls(params=self.model.parameters(), **self.optimizer_kwargs)  # type: ignore
+        optimizer = self.optimizer_cls(params=self.model.parameters(), **self.optimizer_kwargs)  # type: ignore
+        optimizer_dict["optimizer"] = optimizer
 
         if self.lr_scheduler_cls is not None:
-            optimizer_dict["lr_scheduler"] = self.lr_scheduler_cls(**self.lr_scheduler_kwargs)
+            arg_name = self.lr_scheduler_kwargs.pop("num_steps_arg", None)
+            num_steps_factor = self.lr_scheduler_kwargs.pop("num_steps_factor", 1.0)
+            if arg_name is not None:
+                self.lr_scheduler_kwargs[arg_name] = self.trainer.estimated_stepping_batches / num_steps_factor
+
+            optimizer_dict["lr_scheduler"] = self.lr_scheduler_cls(optimizer=optimizer, **self.lr_scheduler_kwargs)
         return optimizer_dict
