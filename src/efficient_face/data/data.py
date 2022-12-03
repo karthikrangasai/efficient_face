@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 import torch
 from pytorch_lightning import LightningDataModule
@@ -16,8 +16,6 @@ class ciFAIRDataModule(LightningDataModule):
         root: Path = DATA_DIR,
         batch_size: int = 16,
         model_name: str = "efficientnet_b0",
-        image_size: Union[int, Tuple[int, int]] = 226,
-        crop_size: Union[int, Tuple[int, int]] = 224,
         num_workers: int = 2,
     ) -> None:
 
@@ -26,15 +24,8 @@ class ciFAIRDataModule(LightningDataModule):
         self.root = root
         self.batch_size = batch_size
         self.model_name = model_name
-        self.image_size = image_size
-        self.crop_size = crop_size
         self.num_workers = num_workers
-        self.image_transform = get_image_transform(
-            model_name=self.model_name,
-            image_size=self.image_size,
-            crop_size=self.crop_size,
-        )
-
+        self.image_transform = get_image_transform(model_name=self.model_name)
         self.target_transform = torch.tensor
 
     def prepare_data(self) -> None:
