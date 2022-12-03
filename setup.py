@@ -16,6 +16,7 @@ extras = {
         "mypy-extensions==0.4.3",
         "types-PyYAML==6.0.12.2",
         "types-python-dateutil==2.8.19.4",
+        "nbstripout==0.6.0",
         "pytest==6.2.5",
     ],
 }
