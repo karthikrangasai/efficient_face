@@ -12,7 +12,7 @@ ARXIV
 -->
 [![CI testing](https://github.com/karthikrangasai/efficient_face/actions/workflows/ci-testing.yml/badge.svg)](https://github.com/karthikrangasai/efficient_face/actions/workflows/ci-testing.yml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/karthikrangasai/efficient_face/blob/master/training_notebook.ipynb)
 
 <!--
 Conference
