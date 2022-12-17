@@ -39,7 +39,7 @@ setup(
         "pytorch-lightning==1.7.7",
         "torchmetrics==0.10.3",
         "timm==0.6.11",
-        "wandb==0.13.5",
+        "wandb==0.13.7",
         "torch_optimizer==0.3.0",
         "pytorch-metric-learning==1.6.3",
         "rich",

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from pytorch_lightning import LightningModule
 from torch import Tensor
@@ -6,6 +6,7 @@ from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from efficient_face.losses import DISTANCES, LOSS_CONFIGURATION
+from efficient_face.metrics.metrics import compute_metrics_for_triplets
 from efficient_face.models.utils import TripletLossBackboneModel
 
 
@@ -25,7 +26,7 @@ class TripletLossBasedModel(LightningModule):
         lr_scheduler_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__()
-        loss_func_kwargs = dict() if loss_func_kwargs is None else loss_func_kwargs
+        loss_func_kwargs = dict(margin=0.2) if loss_func_kwargs is None else loss_func_kwargs
         miner_kwargs = dict() if miner_kwargs is None else miner_kwargs
 
         self.model = TripletLossBackboneModel(model_name=model_name, embedding_size=embedding_size)
@@ -41,6 +42,7 @@ class TripletLossBasedModel(LightningModule):
 
         self.miner = loss_configuration.miner(**miner_kwargs)
         self.loss_fn = loss_configuration.loss_func(distance=distance_func, **loss_func_kwargs)
+        self.margin: float = loss_func_kwargs["margin"]
 
         self.save_hyperparameters(
             "learning_rate",
@@ -57,9 +59,19 @@ class TripletLossBasedModel(LightningModule):
     def step(self, batch: List[Tensor], batch_idx: int, stage: str) -> Tensor:
         inputs, labels = batch
         embeddings = self.model(inputs.float())
-        loss = self.loss_fn(embeddings, labels, self.miner(embeddings, labels))
+        anc_pos_neg = self.miner(embeddings, labels)
+        loss = self.loss_fn(embeddings, labels, anc_pos_neg)
+
+        anchors, positives, negatives = anc_pos_neg
+        accuracy, precision, recall, f1_score = compute_metrics_for_triplets(
+            embeddings[anchors], embeddings[positives], embeddings[negatives], self.margin, use_cosine_similarity=False
+        )
 
         self.log(f"{stage}_loss", loss, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
+        self.log(f"{stage}_accuracy", accuracy, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
+        self.log(f"{stage}_precision", precision, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
+        self.log(f"{stage}_recall", recall, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
+        self.log(f"{stage}_f1_score", f1_score, logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
         self.log("batch_size", labels.shape[0], logger=True, on_step=True, on_epoch=True, reduce_fx="mean")
 
         return loss
