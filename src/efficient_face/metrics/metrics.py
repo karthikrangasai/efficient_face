@@ -22,8 +22,8 @@ def compute_metrics_for_triplets(
 
     accuracy = (true_positives + true_negatives) / (true_negatives + true_negatives + false_negatives + false_positives)
     precision = true_positives / (true_positives + false_positives)
-    recall = true_negatives / (true_positives + false_negatives)
-    f1_score = (precision * recall) / (precision + recall)
+    recall = true_positives / (true_positives + false_negatives)
+    f1_score = (2.0 * precision * recall) / (precision + recall)
 
     return accuracy, precision, recall, f1_score
 
