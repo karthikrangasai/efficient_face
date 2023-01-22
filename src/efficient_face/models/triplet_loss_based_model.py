@@ -92,7 +92,7 @@ class TripletLossBasedModel(LightningModule):
             arg_name = self.lr_scheduler_kwargs.pop("num_steps_arg", None)
             num_steps_factor = self.lr_scheduler_kwargs.pop("num_steps_factor", 1.0)
             if arg_name is not None:
-                self.lr_scheduler_kwargs[arg_name] = self.trainer.estimated_stepping_batches / num_steps_factor
+                self.lr_scheduler_kwargs[arg_name] = int(self.trainer.estimated_stepping_batches / num_steps_factor)
 
             optimizer_dict["lr_scheduler"] = self.lr_scheduler_cls(optimizer=optimizer, **self.lr_scheduler_kwargs)
         return optimizer_dict
