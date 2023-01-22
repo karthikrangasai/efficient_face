@@ -3,7 +3,6 @@ from typing import Tuple
 from torch import Tensor
 from torch.nn.functional import cosine_similarity, pairwise_distance
 from torchmetrics.functional.classification.accuracy import accuracy
-from torchmetrics.functional.classification.f_beta import binary_f1_score
 from torchmetrics.functional.classification.precision_recall import precision, recall
 
 
