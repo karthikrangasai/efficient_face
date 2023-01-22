@@ -43,6 +43,7 @@ setup(
         "torch_optimizer==0.3.0",
         "pytorch-metric-learning==1.6.3",
         "rich",
+        "ipywidgets",
     ],
     extras_require=extras,
     classifiers=[

@@ -32,5 +32,5 @@ def compute_metrics_for_softmax(preds: Tensor, labels: Tensor) -> Tuple[Tensor, 
     _accuracy = accuracy(preds, labels)
     _precision = precision(preds, labels)
     _recall = recall(preds, labels)
-    f1_score = (_precision * _recall) / (_precision + _recall)
+    f1_score = (2.0 * _precision * _recall) / (_precision + _recall)
     return _accuracy, _precision, _recall, f1_score

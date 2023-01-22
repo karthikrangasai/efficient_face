@@ -9,6 +9,7 @@ wandb==0.13.7
 torch_optimizer==0.3.0
 pytorch-metric-learning==1.6.3
 rich
+ipywidgets
 
 pre-commit==2.20.0
 pre-commit-hooks==4.3.0
