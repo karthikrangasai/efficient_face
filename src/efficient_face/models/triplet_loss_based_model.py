@@ -88,7 +88,11 @@ class TripletLossBasedModel(LightningModule):
 
         if self.optimizer_cls.__name__.lower() == "lookahead":
             sgdw_optimizer = SGDW(
-                params=self.model.parameters(), lr=self.optimizer_kwargs.pop("lr"), weight_decay=1e-5, nesterov=True
+                params=self.model.parameters(),
+                lr=self.optimizer_kwargs.pop("lr"),
+                momentum=0.8,
+                weight_decay=1e-5,
+                nesterov=True,
             )
             optimizer = Lookahead(sgdw_optimizer, **self.optimizer_kwargs)
         else:

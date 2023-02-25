@@ -1,4 +1,3 @@
-program: modal_hpo_script.py
 method: random
 metric:
   name: val_loss
@@ -7,20 +6,28 @@ parameters:
   learning_rate:
     min: 0.00001
     max: 0.5
+    distribution: uniform
+
   model_name:
     values:
       - "resnet18"
       - "mobilenetv3_small_100"
       - "efficientnet_b0"
+    distribution: categorical
+
   triplet_strategy:
     values:
       - "VANILLA"
       - "BATCH_HARD"
-      - "BATCH_HARD_V2"
       - "FOCAL"
-      - "MULTISIMILARITY"
       - "HAP2S_E"
       - "HAP2S_P"
+    distribution: categorical
+  loss_func_kwargs__margin:
+    max: 1.0
+    min: 0.1
+    distribution: uniform
+
   optimizer:
     values:
       - "adam"
@@ -30,9 +37,12 @@ parameters:
       - "ranger"
       - "lookahead"
       - "sgdw"
+    distribution: categorical
   lr_scheduler:
     values:
+      - "None"
       - "constant"
       - "cosineannealingwarmrestarts"
       - "step"
       - "onecycle"
+    distribution: categorical
