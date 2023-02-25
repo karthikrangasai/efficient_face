@@ -1,0 +1,38 @@
+program: modal_hpo_script.py
+method: random
+metric:
+  name: val_loss
+  goal: minimize
+parameters:
+  learning_rate:
+    min: 0.00001
+    max: 0.5
+  model_name:
+    values:
+      - "resnet18"
+      - "mobilenetv3_small_100"
+      - "efficientnet_b0"
+  triplet_strategy:
+    values:
+      - "VANILLA"
+      - "BATCH_HARD"
+      - "BATCH_HARD_V2"
+      - "FOCAL"
+      - "MULTISIMILARITY"
+      - "HAP2S_E"
+      - "HAP2S_P"
+  optimizer:
+    values:
+      - "adam"
+      - "adadelta"
+      - "adagrad"
+      - "rmsprop"
+      - "ranger"
+      - "lookahead"
+      - "sgdw"
+  lr_scheduler:
+    values:
+      - "constant"
+      - "cosineannealingwarmrestarts"
+      - "step"
+      - "onecycle"
