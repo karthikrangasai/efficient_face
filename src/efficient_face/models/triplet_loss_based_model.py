@@ -4,6 +4,7 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
+from torch_optimizer import SGDW, Lookahead
 
 from efficient_face.losses import DISTANCES, LOSS_CONFIGURATION
 from efficient_face.metrics.metrics import compute_metrics_for_triplets
@@ -85,7 +86,13 @@ class TripletLossBasedModel(LightningModule):
     def configure_optimizers(self) -> Dict[str, Union[Optimizer, _LRScheduler]]:
         optimizer_dict: Dict[str, Union[Optimizer, _LRScheduler]] = dict()
 
-        optimizer = self.optimizer_cls(params=self.model.parameters(), **self.optimizer_kwargs)  # type: ignore
+        if self.optimizer_cls.__name__.lower() == "lookahead":
+            sgdw_optimizer = SGDW(
+                params=self.model.parameters(), lr=self.optimizer_kwargs.pop("lr"), weight_decay=1e-5, nesterov=True
+            )
+            optimizer = Lookahead(sgdw_optimizer, **self.optimizer_kwargs)
+        else:
+            optimizer = self.optimizer_cls(params=self.model.parameters(), **self.optimizer_kwargs)  # type: ignore
         optimizer_dict["optimizer"] = optimizer
 
         if self.lr_scheduler_cls is not None:
